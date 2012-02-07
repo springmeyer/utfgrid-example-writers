@@ -111,7 +111,16 @@ class Renderer:
         self.ctrans = ctrans
         self.req = ctrans.request
 
-    def apply(self,layer,fields=[]):
+    def apply(self,layer,field_names=[]):
+        layer_def = layer.GetLayerDefn()
+        fields = {}
+        for i in range(layer_def.GetFieldCount()):
+            field = layer_def.GetFieldDefn(i)
+            if field.GetName() in field_names: 
+                fields[i] = field
+        if len(fields.keys()) == 0:
+            raise Exception("No valid fields, field_names was %s")
+
         for y in xrange(0,self.req.height+1,self.grid.resolution):
             row = []
             for x in xrange(0,self.req.width+1,self.grid.resolution):
@@ -123,31 +132,36 @@ class Renderer:
                 #g = ogr.CreateGeometryFromWkt(wkt)
                 layer.SetSpatialFilter(g)
                 found = False
-                if layer.GetFeatureCount() > 0:
-                    feat = layer.GetNextFeature()
-                    if feat is not None:
-                        geom = feat.GetGeometryRef()
-                        if geom.Contains(g):
-                            feature_id = feat.GetFID()
-                            row.append(feature_id)
-                            attr = {}
-                            for x in xrange(0,feat.GetFieldCount()):
-                                field_def = feat.GetFieldDefnRef(x)
-                                if field_def.GetName() in fields:
-                                    field_type = field_def.GetTypeName()
-                                    if field_type == "Integer":
-                                        attr[field_def.GetName()] = feat.GetFieldAsInteger(x)
-                                    elif field_type == "Real":
-                                        attr[field_def.GetName()] = feat.GetFieldAsDouble(x)
-                                    else:
-                                        attr[field_def.GetName()] = feat.GetFieldAsString(x)
-                            self.grid.feature_cache[feature_id] = attr
-                            found = True
+                feat = layer.GetNextFeature()
+                while feat is not None:
+                    geom = feat.GetGeometryRef()
+                    if geom.Contains(g):
+                        feature_id = feat.GetFID()
+                        row.append(feature_id)
+                        attr = {}
+                        for index, field in fields.iteritems():
+                            field_type = field.GetTypeName()
+                            field_name = field.GetName()
+                            if field_type == "Integer":
+                                attr[field_name] = feat.GetFieldAsInteger(index)
+                            elif field_type == "Real":
+                                attr[field_name] = feat.GetFieldAsDouble(index)
+                            else:
+                                attr[field_name] = feat.GetFieldAsString(index)
+                        self.grid.feature_cache[feature_id] = attr
+                        found = True
+                    # Note that this just grabs the first feature
+                    feat = None
+                    # Use this to continue looping and implement more 
+                    # advanced selection logic
+                    #feat = layer.GetNextFeature()
+                
                 if not found:
                     row.append("")
+
             self.grid.rows.append(row)
-            #layer.SetSpatialFilter(None)
-            #layer.ResetReading()
+            layer.ResetReading()
+            layer.SetSpatialFilter(None)
 
 def resolve(grid,row,col):
     """ Resolve the attributes for a given pixel in a grid.
@@ -168,12 +182,12 @@ if __name__ == "__main__":
 
     ds = ogr.Open('data/ne_110m_admin_0_countries.shp')
     layer = ds.GetLayer(0)
-    box = Extent(-180,-180,180,180)
+    box = Extent(0,0,90,90)
     tile = Request(256,256,box)
     ctrans = CoordTransform(tile)
     grid = Grid()
     renderer = Renderer(grid,ctrans)
-    renderer.apply(layer,fields=['NAME_FORMA'])
+    renderer.apply(layer,field_names=['NAME_FORMA'])
     utfgrid = grid.encode()
-    assert resolve(utfgrid,26,12) == {'NAME_FORMA': 'United States of America'}
+    #assert resolve(utfgrid,26,12) == {'NAME_FORMA': 'United States of America'}
     print json.dumps(utfgrid)
