@@ -116,10 +116,11 @@ class Renderer:
         for i in range(layer_def.GetFieldCount()):
             field = layer_def.GetFieldDefn(i)
             if field.GetName() in field_names: 
-                fields[i] = field
+                fields[i] = {'name': field.GetName(), 'type': field.GetTypeName() }
         if len(fields.keys()) == 0:
             raise Exception("No valid fields, field_names was %s")
 
+        layer.ResetReading()
         for y in xrange(0,self.req.height,self.grid.resolution):
             row = []
             for x in xrange(0,self.req.width,self.grid.resolution):
@@ -128,7 +129,6 @@ class Renderer:
                 wkt = 'POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))' \
                    % (minx, miny, minx, maxy, maxx, maxy, maxx, miny, minx, miny)
                 g = ogr.CreateGeometryFromWkt(wkt)
-                layer.ResetReading()
                 layer.SetSpatialFilter(g)
                 found = False
                 feat = layer.GetNextFeature()
@@ -139,8 +139,8 @@ class Renderer:
                         row.append(feature_id)
                         attr = {}
                         for index, field in fields.iteritems():
-                            field_type = field.GetTypeName()
-                            field_name = field.GetName()
+                            field_type = field['type'] #.GetTypeName()
+                            field_name = field['name'] #.GetName()
                             if field_type == "Integer":
                                 attr[field_name] = feat.GetFieldAsInteger(index)
                             elif field_type == "Real":
