@@ -34,7 +34,6 @@ class Request:
         self.height = height
         self.extent = extent
 
-
 class CoordTransform:
     def __init__(self,request,offset_x=0.0,offset_y=0.0):
         assert isinstance(request,Request)
@@ -70,7 +69,7 @@ class Grid:
 
     def height(self):
         return len(self.rows)
-    
+
     def encode(self):
         keys = {}
         key_order = []
@@ -121,21 +120,21 @@ class Renderer:
         if len(fields.keys()) == 0:
             raise Exception("No valid fields, field_names was %s")
 
-        for y in xrange(0,self.req.height+1,self.grid.resolution):
+        for y in xrange(0,self.req.height,self.grid.resolution):
             row = []
-            for x in xrange(0,self.req.width+1,self.grid.resolution):
-                lon,lat = self.ctrans.backward(x,y)
-                wkt = 'POINT(%s %s)' % (lon,lat)
+            for x in xrange(0,self.req.width,self.grid.resolution):
+                minx,maxy = self.ctrans.backward(x,y)
+                maxx,miny = self.ctrans.backward(x+1,y+1)
+                wkt = 'POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))' \
+                   % (minx, miny, minx, maxy, maxx, maxy, maxx, miny, minx, miny)
                 g = ogr.CreateGeometryFromWkt(wkt)
-                #wkt = 'POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))' \
-                #   % (minx, miny, minx, maxy, maxx, maxy, maxx, miny, minx, miny)
-                #g = ogr.CreateGeometryFromWkt(wkt)
+                layer.ResetReading()
                 layer.SetSpatialFilter(g)
                 found = False
                 feat = layer.GetNextFeature()
                 while feat is not None:
                     geom = feat.GetGeometryRef()
-                    if geom.Contains(g):
+                    if geom.Intersects(g):
                         feature_id = feat.GetFID()
                         row.append(feature_id)
                         attr = {}
@@ -150,18 +149,16 @@ class Renderer:
                                 attr[field_name] = feat.GetFieldAsString(index)
                         self.grid.feature_cache[feature_id] = attr
                         found = True
-                    # Note that this just grabs the first feature
-                    feat = None
-                    # Use this to continue looping and implement more 
-                    # advanced selection logic
-                    #feat = layer.GetNextFeature()
+                        # Note that setting feat to None 
+                        # effectively grabs the first intersecting feature
+                        feat = None
+                    else:
+                        feat = layer.GetNextFeature()
                 
                 if not found:
                     row.append("")
 
             self.grid.rows.append(row)
-            layer.ResetReading()
-            layer.SetSpatialFilter(None)
 
 def resolve(grid,row,col):
     """ Resolve the attributes for a given pixel in a grid.
@@ -182,12 +179,12 @@ if __name__ == "__main__":
 
     ds = ogr.Open('data/ne_110m_admin_0_countries.shp')
     layer = ds.GetLayer(0)
-    box = Extent(0,0,90,90)
+    box = Extent(-140,0,-50,90)
     tile = Request(256,256,box)
     ctrans = CoordTransform(tile)
     grid = Grid()
     renderer = Renderer(grid,ctrans)
-    renderer.apply(layer,field_names=['NAME_FORMA'])
+    renderer.apply(layer,field_names=['NAME_FORMA', 'POP_EST'])
     utfgrid = grid.encode()
     #assert resolve(utfgrid,26,12) == {'NAME_FORMA': 'United States of America'}
     print json.dumps(utfgrid)
