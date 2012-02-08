@@ -58,6 +58,24 @@ class CoordTransform:
         y0 = self.extent.maxy - (y + self.offset_y) / self.sy
         return x0,y0
 
+def escape_codepoints(codepoint):
+    """Skip the codepoints that cannot be encoded directly in JSON.
+    """
+    if codepoint == 34:
+        codepoint += 1 # skip "
+    elif codepoint == 92:
+        codepoint += 1 # Skip backslash
+    return codepoint
+
+def decode_id(codepoint):
+    codepoint = ord(codepoint)
+    if codepoint >= 93:
+        codepoint-=1
+    if codepoint >= 35:
+        codepoint-=1
+    codepoint -= 32
+    return codepoint
+
 class Grid:
     def __init__(self,resolution=4):
         self.rows = []
@@ -75,7 +93,7 @@ class Grid:
         key_order = []
         data = {}
         utf_rows = []
-        codepoint = 31
+        codepoint = 32
         for y in xrange(0,self.height()):
             row_utf = u''
             row = self.rows[y]
@@ -84,18 +102,13 @@ class Grid:
                 if feature_id in keys:
                     row_utf += unichr(keys[feature_id])
                 else:
-                    # Create a new entry for this key. Skip the codepoints that
-                    # cannot be encoded directly in JSON.
-                    codepoint += 1
-                    if codepoint == 34:
-                        codepoint += 1 # skip "
-                    elif codepoint == 92:
-                        codepoint += 1 # Skip backslash
+                    codepoint = escape_codepoints(codepoint)
                     keys[feature_id] = codepoint
                     key_order.append(feature_id)
                     if self.feature_cache.get(feature_id):
                         data[feature_id] = self.feature_cache[feature_id]
                     row_utf += unichr(codepoint)
+                    codepoint += 1
             utf_rows.append(row_utf)
 
         utf = {}
@@ -165,12 +178,7 @@ def resolve(grid,row,col):
     """
     row = grid['grid'][row]
     utf_val = row[col]
-    codepoint = ord(utf_val)
-    if (codepoint >= 93):
-        codepoint-=1
-    if (codepoint >= 35):
-        codepoint-=1
-    codepoint -= 32
+    codepoint = decode_id(utf_val)
     key = grid['keys'][codepoint]
     return grid['data'].get(key)
     
