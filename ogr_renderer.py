@@ -194,5 +194,4 @@ if __name__ == "__main__":
     renderer = Renderer(grid,ctrans)
     renderer.apply(layer,field_names=['NAME_FORMA', 'POP_EST'])
     utfgrid = grid.encode()
-    #assert resolve(utfgrid,26,12) == {'NAME_FORMA': 'United States of America'}
     print json.dumps(utfgrid)
