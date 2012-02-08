@@ -30,8 +30,26 @@ This uses the [OGR library](http://www.gdal.org/ogr) and its python bindings to 
 a polygon shapefile, build a pixel buffer of feature ids, and then encode those
 ids in UTFGrid format.
 
+View a sample grid in your terminal by doing:
 
-2) TODO: shapely/fiona/libspatialindex implementation
+    python ogr_renderer.py
+
+And pretty print the json like:
+
+    python ogr_renderer.py | python -mjson.tool
+
+2) mapnik_renderer.py
+
+This sample matches the ogr example, but uses Mapnik's AGG-based scanline rendering of grid ids, which is sensitive to the exact styles applied to geometries - allowing it to work equally well for encoding interactive pixels of both points, lines, polygons, text, and svg/png symbols (their shape).
+
+This example requires Mapnik >= 2.0.0.
+
+View the sample output like:
+
+    python mapnik_renderer.py | python -mjson.tool
 
 
-3) TODO: gdal_rasterize implemenation
+3) TODO: shapely/fiona/libspatialindex implementation
+
+
+4) TODO: gdal_rasterize implemenation
