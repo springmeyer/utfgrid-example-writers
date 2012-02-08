@@ -11,6 +11,10 @@ https://github.com/mapbox/utfgrid-spec
 
 These examples are designed to be simple and with few dependencies.
 
+They demonstrate how to author UTFGrids, but not how to serve them. For server implementations see:
+
+https://github.com/mapbox/utfgrid-spec/wiki/Implementations
+
 Currently the only production-ready write implementation for UTFGrids is found inside Mapnik's
 [grid_renderer](https://github.com/mapnik/mapnik/tree/master/include/mapnik/grid) which
 which uses AGG rendering to quickly render a feature hit grid in a single pass over geometries.
