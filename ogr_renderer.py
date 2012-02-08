@@ -113,7 +113,7 @@ class Grid:
 
         utf = {}
         utf['grid'] = utf_rows
-        utf['keys'] = key_order
+        utf['keys'] = [str(key) for key in key_order]
         utf['data'] = data
         return utf
 
