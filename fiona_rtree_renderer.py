@@ -36,21 +36,23 @@ class Renderer:
                 found = False
                 minx,maxy = self.ctrans.backward(x,y)
                 maxx,miny = self.ctrans.backward(x+1,y+1)
-                wkt = 'POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))' \
-                   % (minx, miny, minx, maxy, maxx, maxy, maxx, miny, minx, miny)
+                wkt = 'POINT(%f %f)' \
+                   % (minx + (maxx - minx)/2, miny + (maxy - miny)/2)
                 g = loads(wkt)
-                candidates = idx.intersection((minx,miny,maxx,maxy), objects=True)
-                for c in candidates:
-                    geom, attrs = c.object
-                    # Perform an intersection to see if it's a keeper
-                    # In the interest of speed, we grab the first hit
-                    if g.intersects(geom):
-                        row.append(c.id)
-                        self.grid.feature_cache[c.id] = attrs
+                candidates = list(idx.intersection((minx,miny,maxx,maxy), objects=True))
+                for f in candidates:
+                    geom, attrs = f.object
+
+                    # See if the candidate geometry contains the center point of the cell 
+                    # In the interest of speed, we grab the first hit 
+                    if geom.contains(g):
+                        row.append(f.id)
+                        self.grid.feature_cache[f.id] = attrs
                         found = True
 
                 if not found:
                     row.append("")
+
 
             self.grid.rows.append(row)
 
