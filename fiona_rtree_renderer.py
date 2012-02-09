@@ -3,12 +3,9 @@ from rtree import Rtree
 from fiona import collection
 from shapely.geometry import mapping, shape
 from shapely.wkt import loads
-from ogr_renderer import Extent, Request, CoordTransform, Grid, resolve
-try:
-    import json
-except ImportError:
-    import simplejson as json
- 
+from ogr_renderer import Extent, Request, CoordTransform, Grid
+import json
+
 class Renderer:
     def __init__(self,grid,ctrans):
         self.grid = grid
@@ -53,7 +50,6 @@ class Renderer:
                 if not found:
                     row.append("")
 
-
             self.grid.rows.append(row)
 
 if __name__ == "__main__":
@@ -67,7 +63,3 @@ if __name__ == "__main__":
             field_names=['NAME_FORMA', 'POP_EST'])
     utfgrid = grid.encode()
     print json.dumps(utfgrid)
-
-
-
-     

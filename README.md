@@ -53,7 +53,6 @@ View the sample output like:
     python mapnik_renderer.py | python -mjson.tool
 
 
-3) TODO: shapely/fiona/libspatialindex implementation
+3) fiona_rtree_renderer.py
 
-
-4) TODO: gdal_rasterize implemenation
+This one uses an in memory rtree index to speed up the loop creating the grid, and a fiona collection to read the shapefile.
