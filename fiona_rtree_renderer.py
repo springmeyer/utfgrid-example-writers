@@ -25,7 +25,13 @@ class Renderer:
                 for field, val in attrs.iteritems():
                     if field in field_names:
                         saved_attrs[field] = val
-                idx.insert(int(feat['id']), geom.bounds, obj=(geom, saved_attrs)) 
+
+                # Break up multipolygons for more efficient index
+                if geom.type == "MultiPolygon":
+                    for g in geom.geoms:
+                        idx.insert(int(feat['id']), g.bounds, obj=(g, saved_attrs)) 
+                else:
+                    idx.insert(int(feat['id']), geom.bounds, obj=(geom, saved_attrs)) 
 
         for y in xrange(0,self.req.height,self.grid.resolution):
             row = []
